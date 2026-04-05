@@ -21,3 +21,9 @@ To address "popup not showing in the middle", this version does:
 
 - Preferred: compositor texture clone (`Clutter.Clone`)
 - Fallback: app icon + app title
+
+
+## Why popup was not appearing
+
+Using `get_texture()` as clone source can fail in Shell actors.
+This version clones the compositor actor directly (`source: compositorActor`) and scales it to thumbnail size.

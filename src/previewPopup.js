@@ -94,14 +94,20 @@ export class PreviewSwitcherPopup {
 
     _buildThumbnailActor(window) {
         const compositorActor = window.get_compositor_private?.();
-        const texture = compositorActor?.get_texture?.();
 
-        if (texture) {
+        if (compositorActor && compositorActor.width > 0 && compositorActor.height > 0) {
+            const scale = Math.min(
+                this._thumbWidth / compositorActor.width,
+                this._thumbHeight / compositorActor.height
+            );
+
             return new Clutter.Clone({
-                source: texture,
+                source: compositorActor,
                 reactive: false,
-                width: this._thumbWidth,
-                height: this._thumbHeight,
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+                scale_x: scale,
+                scale_y: scale,
             });
         }
 
