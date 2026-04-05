@@ -1,0 +1,28 @@
+.preview-switcher-popup {
+  spacing: 16px;
+  padding: 18px;
+  border-radius: 14px;
+  background-color: rgba(28, 28, 32, 0.88);
+}
+
+.preview-switcher-item {
+  spacing: 8px;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.preview-switcher-item:selected {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.preview-switcher-thumb-bin {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.preview-switcher-title {
+  max-width: 220px;
+  font-size: 11pt;
+  color: #fff;
+}
