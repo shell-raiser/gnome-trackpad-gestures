@@ -13,7 +13,11 @@ export class PreviewSwitcherPopup {
 
         this._thumbWidth = 260;
         this._thumbHeight = 160;
+        this._renderThumbWidth = 260;
+        this._renderThumbHeight = 160;
         this._itemSpacing = 18;
+        this._horizontalPadding = 80;
+        this._maxMonitorUsage = 0.92;
     }
 
     configureFromSettings() {
@@ -36,6 +40,8 @@ export class PreviewSwitcherPopup {
             track_hover: false,
             visible: true,
         });
+
+        this._computeRenderSize(windows.length);
 
         windows.forEach(window => {
             const item = this._buildWindowItem(window);
@@ -72,6 +78,19 @@ export class PreviewSwitcherPopup {
         this._selectedIndex = 0;
     }
 
+    _computeRenderSize(windowCount) {
+        const monitor = Main.layoutManager.currentMonitor;
+        const maxWidth = Math.floor((monitor?.width ?? 1920) * this._maxMonitorUsage);
+        const totalSpacing = (windowCount - 1) * this._itemSpacing + this._horizontalPadding;
+        const availableForThumbs = Math.max(120, maxWidth - totalSpacing);
+        const maxPerItem = Math.floor(availableForThumbs / Math.max(1, windowCount));
+
+        const scale = Math.min(1, maxPerItem / this._thumbWidth);
+
+        this._renderThumbWidth = Math.max(100, Math.floor(this._thumbWidth * scale));
+        this._renderThumbHeight = Math.max(72, Math.floor(this._thumbHeight * scale));
+    }
+
     _buildWindowItem(window) {
         const root = new St.BoxLayout({
             style_class: 'preview-switcher-item',
@@ -81,8 +100,8 @@ export class PreviewSwitcherPopup {
 
         const thumbBin = new St.Bin({
             style_class: 'preview-switcher-thumb-bin',
-            width: this._thumbWidth,
-            height: this._thumbHeight,
+            width: this._renderThumbWidth,
+            height: this._renderThumbHeight,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -108,8 +127,8 @@ export class PreviewSwitcherPopup {
             return new Clutter.Clone({
                 source: compositorActor,
                 reactive: false,
-                width: this._thumbWidth,
-                height: this._thumbHeight,
+                width: this._renderThumbWidth,
+                height: this._renderThumbHeight,
                 x_align: Clutter.ActorAlign.FILL,
                 y_align: Clutter.ActorAlign.FILL,
             });
@@ -123,7 +142,8 @@ export class PreviewSwitcherPopup {
         });
 
         const app = Shell.WindowTracker.get_default().get_window_app(window);
-        const icon = app?.create_icon_texture?.(64);
+        const iconSize = Math.max(24, Math.floor(this._renderThumbHeight * 0.35));
+        const icon = app?.create_icon_texture?.(iconSize);
         if (icon)
             fallback.add_child(icon);
 
@@ -139,8 +159,8 @@ export class PreviewSwitcherPopup {
             return;
 
         const monitor = Main.layoutManager.currentMonitor;
-        const popupWidth = (windowCount * this._thumbWidth) + ((windowCount - 1) * this._itemSpacing) + 80;
-        const popupHeight = this._thumbHeight + 90;
+        const popupWidth = (windowCount * this._renderThumbWidth) + ((windowCount - 1) * this._itemSpacing) + this._horizontalPadding;
+        const popupHeight = this._renderThumbHeight + 90;
 
         this._container.set_position(
             Math.floor(monitor.x + (monitor.width - popupWidth) / 2),

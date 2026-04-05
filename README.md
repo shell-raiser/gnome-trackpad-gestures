@@ -31,5 +31,6 @@ Open **Extensions** app → this extension → **Preferences** to tune:
 - long-swipe popup threshold (`popup-reveal-steps`)
 - short-swipe threshold (`short-swipe-distance`)
 - preview thumbnail size (`preview-width`, `preview-height`)
+- automatic down-scaling when many windows are open so the popup fits on screen
 
 Tested target shell range in metadata: GNOME Shell 45-49.

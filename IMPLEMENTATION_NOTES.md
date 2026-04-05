@@ -26,3 +26,8 @@
 
 - Added GSettings schema: `org.gnome.shell.extensions.gnome-trackpad-gestures`.
 - Added `prefs.js` UI so users can control sensitivity and preview size in Extensions app.
+
+
+6. **Large window list fitting**
+   - Popup render thumbnail size is automatically scaled down when many windows are open.
+   - Width is capped to a monitor-usage budget so the popup stays on-screen.
