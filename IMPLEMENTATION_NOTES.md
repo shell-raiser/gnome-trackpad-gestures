@@ -2,17 +2,22 @@
 
 ## Gesture handling fixes
 
-To address "only left swipe partially works" symptoms, this version does:
+To address "short swipes work but long swipes behave the same", this version does:
 
-- Start a gesture session on `TOUCHPAD_SWIPE BEGIN` and open popup immediately.
-- Use cumulative horizontal motion for index selection.
-- Scale `pixelsPerStep` from monitor width so short and long swipes map predictably.
-- Support both swipe directions with wrapped indexing.
+- Keep cumulative swipe tracking through the entire gesture session.
+- Apply a swipe gain to gesture deltas so long swipes can cross multiple window steps.
+- Use a lower `pixelsPerStep` (scaled from monitor width) and `Math.trunc` to convert motion into multi-step index changes.
+- Keep wrapped indexing so both swipe directions are responsive.
 
-## Popup rendering
+## Popup visibility fixes
 
-- Popup is created at session begin and destroyed at session end/cancel.
-- Selection highlight updates every gesture update.
-- Thumbnail priority:
-  1) compositor texture clone (`Clutter.Clone`)
-  2) app icon + app title fallback
+To address "popup not showing in the middle", this version does:
+
+- Render the popup via `Main.layoutManager.addTopChrome(...)`.
+- Center popup with explicit width/height estimates based on thumbnail dimensions and window count.
+- Keep popup alive until gesture end/cancel.
+
+## Thumbnail fallback
+
+- Preferred: compositor texture clone (`Clutter.Clone`)
+- Fallback: app icon + app title

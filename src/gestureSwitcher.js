@@ -4,12 +4,6 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {PreviewSwitcherPopup} from './previewPopup.js';
 
-/**
- * Gesture-driven MRU switcher:
- * - One long swipe can step through multiple windows.
- * - Selection updates continuously during the active gesture.
- * - Activation only happens on gesture end.
- */
 export class GestureSwitcherController {
     constructor() {
         this._stageCaptureId = 0;
@@ -21,7 +15,8 @@ export class GestureSwitcherController {
         this._selectedIndex = 0;
         this._accumulatedDx = 0;
 
-        this._pixelsPerStep = 120;
+        this._pixelsPerStep = 18;
+        this._swipeGain = 24;
         this._wrapSelection = true;
     }
 
@@ -76,7 +71,7 @@ export class GestureSwitcherController {
             return Clutter.EVENT_PROPAGATE;
 
         const monitor = Main.layoutManager.currentMonitor;
-        this._pixelsPerStep = Math.max(40, Math.floor((monitor?.width ?? 1920) / 10));
+        this._pixelsPerStep = Math.max(10, Math.floor((monitor?.width ?? 1920) / 120));
 
         this._sessionActive = true;
         this._anchorIndex = 0;
@@ -94,9 +89,9 @@ export class GestureSwitcherController {
             return Clutter.EVENT_PROPAGATE;
 
         const [dx] = event.get_gesture_motion_delta();
-        this._accumulatedDx += dx;
+        this._accumulatedDx += dx * this._swipeGain;
 
-        const steps = Math.round(-this._accumulatedDx / this._pixelsPerStep);
+        const steps = Math.trunc(-this._accumulatedDx / this._pixelsPerStep);
         this._selectedIndex = this._offsetIndex(this._anchorIndex, steps);
 
         this._popup.updateSelection(this._selectedIndex, this._normalizedProgress());
@@ -111,8 +106,7 @@ export class GestureSwitcherController {
         if (!this._wrapSelection)
             return Math.max(0, Math.min(length - 1, start + offset));
 
-        const wrapped = ((start + offset) % length + length) % length;
-        return wrapped;
+        return ((start + offset) % length + length) % length;
     }
 
     _finishSession() {
@@ -120,7 +114,6 @@ export class GestureSwitcherController {
             return Clutter.EVENT_PROPAGATE;
 
         const targetWindow = this._windows[this._selectedIndex];
-
         if (targetWindow)
             Main.activateWindow(targetWindow);
 

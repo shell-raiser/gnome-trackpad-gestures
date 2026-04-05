@@ -4,9 +4,6 @@ import Shell from 'gi://Shell';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-/**
- * Popup with window previews.
- */
 export class PreviewSwitcherPopup {
     constructor() {
         this._container = null;
@@ -15,6 +12,7 @@ export class PreviewSwitcherPopup {
 
         this._thumbWidth = 260;
         this._thumbHeight = 160;
+        this._itemSpacing = 18;
     }
 
     open(windows, selectedIndex) {
@@ -27,6 +25,7 @@ export class PreviewSwitcherPopup {
             reactive: false,
             can_focus: false,
             track_hover: false,
+            visible: true,
         });
 
         windows.forEach(window => {
@@ -35,7 +34,9 @@ export class PreviewSwitcherPopup {
             this._container.add_child(item.root);
         });
 
-        Main.layoutManager.uiGroup.add_child(this._container);
+        Main.layoutManager.addTopChrome(this._container);
+        this._layoutCentered(windows.length);
+
         this._container.opacity = 0;
         this._container.ease({
             opacity: 255,
@@ -43,7 +44,6 @@ export class PreviewSwitcherPopup {
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
 
-        this._layoutCentered();
         this._applySelection();
     }
 
@@ -56,6 +56,7 @@ export class PreviewSwitcherPopup {
         if (!this._container)
             return;
 
+        Main.layoutManager.removeChrome(this._container);
         this._container.destroy();
         this._container = null;
         this._items = [];
@@ -123,16 +124,17 @@ export class PreviewSwitcherPopup {
         return fallback;
     }
 
-    _layoutCentered() {
+    _layoutCentered(windowCount) {
         if (!this._container)
             return;
 
         const monitor = Main.layoutManager.currentMonitor;
-        const [, , natWidth, natHeight] = this._container.get_preferred_size();
+        const popupWidth = (windowCount * this._thumbWidth) + ((windowCount - 1) * this._itemSpacing) + 80;
+        const popupHeight = this._thumbHeight + 90;
 
         this._container.set_position(
-            Math.floor(monitor.x + (monitor.width - natWidth) / 2),
-            Math.floor(monitor.y + (monitor.height - natHeight) / 2)
+            Math.floor(monitor.x + (monitor.width - popupWidth) / 2),
+            Math.floor(monitor.y + (monitor.height - popupHeight) / 2)
         );
     }
 
