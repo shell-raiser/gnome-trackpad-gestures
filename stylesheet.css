@@ -1,0 +1,33 @@
+.preview-switcher-popup {
+  spacing: 18px;
+  padding: 20px;
+  border-radius: 14px;
+  background-color: rgba(18, 18, 22, 0.9);
+}
+
+.preview-switcher-item {
+  spacing: 8px;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.preview-switcher-item:selected {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.preview-switcher-thumb-bin {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.preview-switcher-title {
+  max-width: 260px;
+  font-size: 11pt;
+  color: #fff;
+}
+
+.preview-switcher-fallback {
+  spacing: 6px;
+  color: rgba(255, 255, 255, 0.8);
+}

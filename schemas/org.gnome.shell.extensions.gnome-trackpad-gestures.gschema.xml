@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.gnome-trackpad-gestures" path="/org/gnome/shell/extensions/gnome-trackpad-gestures/">
+    <key name="swipe-gain" type="d">
+      <default>1.0</default>
+      <summary>Swipe gain multiplier</summary>
+    </key>
+    <key name="pixels-per-step" type="i">
+      <default>140</default>
+      <summary>Gesture distance per window step</summary>
+    </key>
+    <key name="popup-reveal-steps" type="i">
+      <default>2</default>
+      <summary>Step threshold before showing popup</summary>
+    </key>
+    <key name="short-swipe-distance" type="i">
+      <default>30</default>
+      <summary>Distance required for short-swipe switch</summary>
+    </key>
+    <key name="preview-width" type="i">
+      <default>260</default>
+      <summary>Preview thumbnail width</summary>
+    </key>
+    <key name="preview-height" type="i">
+      <default>160</default>
+      <summary>Preview thumbnail height</summary>
+    </key>
+  </schema>
+</schemalist>
