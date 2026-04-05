@@ -5,7 +5,8 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 export class PreviewSwitcherPopup {
-    constructor() {
+    constructor(settings) {
+        this._settings = settings;
         this._container = null;
         this._items = [];
         this._selectedIndex = 0;
@@ -13,6 +14,14 @@ export class PreviewSwitcherPopup {
         this._thumbWidth = 260;
         this._thumbHeight = 160;
         this._itemSpacing = 18;
+    }
+
+    configureFromSettings() {
+        if (!this._settings)
+            return;
+
+        this._thumbWidth = this._settings.get_int('preview-width');
+        this._thumbHeight = this._settings.get_int('preview-height');
     }
 
     open(windows, selectedIndex) {

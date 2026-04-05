@@ -5,7 +5,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {PreviewSwitcherPopup} from './previewPopup.js';
 
 export class GestureSwitcherController {
-    constructor() {
+    constructor(settings) {
+        this._settings = settings;
         this._stageCaptureId = 0;
         this._popup = null;
 
@@ -18,7 +19,8 @@ export class GestureSwitcherController {
 
         this._pixelsPerStep = 140;
         this._swipeGain = 1;
-        this._popupRevealDistance = 180;
+        this._popupRevealSteps = 2;
+        this._shortSwipeDistance = 30;
         this._wrapSelection = false;
     }
 
@@ -36,6 +38,16 @@ export class GestureSwitcherController {
         }
 
         this._cancelSession();
+    }
+
+    _loadSettings() {
+        if (!this._settings)
+            return;
+
+        this._swipeGain = this._settings.get_double('swipe-gain');
+        this._pixelsPerStep = this._settings.get_int('pixels-per-step');
+        this._popupRevealSteps = this._settings.get_int('popup-reveal-steps');
+        this._shortSwipeDistance = this._settings.get_int('short-swipe-distance');
     }
 
     _onCapturedEvent(_actor, event) {
@@ -72,9 +84,7 @@ export class GestureSwitcherController {
         if (this._windows.length < 2)
             return Clutter.EVENT_PROPAGATE;
 
-        const monitor = Main.layoutManager.currentMonitor;
-        this._pixelsPerStep = Math.max(100, Math.floor((monitor?.width ?? 1920) / 12));
-        this._popupRevealDistance = this._pixelsPerStep * 1.25;
+        this._loadSettings();
 
         this._sessionActive = true;
         this._popupVisible = false;
@@ -83,6 +93,7 @@ export class GestureSwitcherController {
         this._accumulatedDx = 0;
 
         this._ensurePopup();
+        this._popup.configureFromSettings();
         return Clutter.EVENT_STOP;
     }
 
@@ -93,10 +104,10 @@ export class GestureSwitcherController {
         const [dx] = event.get_gesture_motion_delta();
         this._accumulatedDx += dx * this._swipeGain;
 
-        const steps = Math.trunc(-this._accumulatedDx / this._pixelsPerStep);
+        const steps = Math.trunc(this._accumulatedDx / this._pixelsPerStep);
         this._selectedIndex = this._offsetIndex(this._anchorIndex, steps);
 
-        if (!this._popupVisible && Math.abs(this._accumulatedDx) >= this._popupRevealDistance) {
+        if (!this._popupVisible && Math.abs(steps) >= this._popupRevealSteps) {
             this._popup.open(this._windows, this._selectedIndex);
             this._popupVisible = true;
         }
@@ -121,6 +132,12 @@ export class GestureSwitcherController {
     _finishSession() {
         if (!this._sessionActive)
             return Clutter.EVENT_PROPAGATE;
+
+        if (!this._popupVisible) {
+            const direction = Math.sign(this._accumulatedDx);
+            if (Math.abs(this._accumulatedDx) >= this._shortSwipeDistance)
+                this._selectedIndex = this._offsetIndex(0, direction === 0 ? 0 : direction);
+        }
 
         const targetWindow = this._windows[this._selectedIndex];
         if (targetWindow)
@@ -159,7 +176,7 @@ export class GestureSwitcherController {
 
     _ensurePopup() {
         if (!this._popup)
-            this._popup = new PreviewSwitcherPopup();
+            this._popup = new PreviewSwitcherPopup(this._settings);
     }
 
     _getMruWindows() {

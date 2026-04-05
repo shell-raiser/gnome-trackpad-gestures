@@ -3,12 +3,14 @@ import {GestureSwitcherController} from './src/gestureSwitcher.js';
 
 export default class TrackpadGestureWindowSwitcherExtension extends Extension {
     enable() {
-        this._controller = new GestureSwitcherController();
+        this._settings = this.getSettings();
+        this._controller = new GestureSwitcherController(this._settings);
         this._controller.enable();
     }
 
     disable() {
         this._controller?.disable();
         this._controller = null;
+        this._settings = null;
     }
 }
