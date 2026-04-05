@@ -10,14 +10,16 @@ export class GestureSwitcherController {
         this._popup = null;
 
         this._sessionActive = false;
+        this._popupVisible = false;
         this._windows = [];
         this._anchorIndex = 0;
         this._selectedIndex = 0;
         this._accumulatedDx = 0;
 
-        this._pixelsPerStep = 18;
-        this._swipeGain = 24;
-        this._wrapSelection = true;
+        this._pixelsPerStep = 140;
+        this._swipeGain = 1;
+        this._popupRevealDistance = 180;
+        this._wrapSelection = false;
     }
 
     enable() {
@@ -71,16 +73,16 @@ export class GestureSwitcherController {
             return Clutter.EVENT_PROPAGATE;
 
         const monitor = Main.layoutManager.currentMonitor;
-        this._pixelsPerStep = Math.max(10, Math.floor((monitor?.width ?? 1920) / 120));
+        this._pixelsPerStep = Math.max(100, Math.floor((monitor?.width ?? 1920) / 12));
+        this._popupRevealDistance = this._pixelsPerStep * 1.25;
 
         this._sessionActive = true;
+        this._popupVisible = false;
         this._anchorIndex = 0;
         this._selectedIndex = 0;
         this._accumulatedDx = 0;
 
         this._ensurePopup();
-        this._popup.open(this._windows, this._selectedIndex);
-
         return Clutter.EVENT_STOP;
     }
 
@@ -94,7 +96,14 @@ export class GestureSwitcherController {
         const steps = Math.trunc(-this._accumulatedDx / this._pixelsPerStep);
         this._selectedIndex = this._offsetIndex(this._anchorIndex, steps);
 
-        this._popup.updateSelection(this._selectedIndex, this._normalizedProgress());
+        if (!this._popupVisible && Math.abs(this._accumulatedDx) >= this._popupRevealDistance) {
+            this._popup.open(this._windows, this._selectedIndex);
+            this._popupVisible = true;
+        }
+
+        if (this._popupVisible)
+            this._popup.updateSelection(this._selectedIndex, this._normalizedProgress());
+
         return Clutter.EVENT_STOP;
     }
 
@@ -131,6 +140,7 @@ export class GestureSwitcherController {
 
     _endCommon() {
         this._sessionActive = false;
+        this._popupVisible = false;
         this._windows = [];
         this._anchorIndex = 0;
         this._selectedIndex = 0;

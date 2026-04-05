@@ -96,18 +96,13 @@ export class PreviewSwitcherPopup {
         const compositorActor = window.get_compositor_private?.();
 
         if (compositorActor && compositorActor.width > 0 && compositorActor.height > 0) {
-            const scale = Math.min(
-                this._thumbWidth / compositorActor.width,
-                this._thumbHeight / compositorActor.height
-            );
-
             return new Clutter.Clone({
                 source: compositorActor,
                 reactive: false,
-                x_align: Clutter.ActorAlign.CENTER,
-                y_align: Clutter.ActorAlign.CENTER,
-                scale_x: scale,
-                scale_y: scale,
+                width: this._thumbWidth,
+                height: this._thumbHeight,
+                x_align: Clutter.ActorAlign.FILL,
+                y_align: Clutter.ActorAlign.FILL,
             });
         }
 

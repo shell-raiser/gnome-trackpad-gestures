@@ -1,29 +1,19 @@
 # Implementation notes
 
-## Gesture handling fixes
+## Requested behavior adjustments
 
-To address "short swipes work but long swipes behave the same", this version does:
+1. **Preview size inside thumbnail boxes**
+   - The preview actor now uses `Clutter.Clone` with explicit `width`/`height` matching thumbnail bounds.
+   - This prevents tiny top-left previews caused by aggressive manual scaling.
 
-- Keep cumulative swipe tracking through the entire gesture session.
-- Apply a swipe gain to gesture deltas so long swipes can cross multiple window steps.
-- Use a lower `pixelsPerStep` (scaled from monitor width) and `Math.trunc` to convert motion into multi-step index changes.
-- Keep wrapped indexing so both swipe directions are responsive.
+2. **Lower swipe sensitivity**
+   - `swipeGain` reduced to `1`.
+   - `pixelsPerStep` increased and scaled from monitor width.
 
-## Popup visibility fixes
+3. **Disable end-to-end looping**
+   - Wrapped index behavior disabled (`_wrapSelection = false`).
+   - Selection clamps to first/last window when swiping beyond either end.
 
-To address "popup not showing in the middle", this version does:
-
-- Render the popup via `Main.layoutManager.addTopChrome(...)`.
-- Center popup with explicit width/height estimates based on thumbnail dimensions and window count.
-- Keep popup alive until gesture end/cancel.
-
-## Thumbnail fallback
-
-- Preferred: compositor texture clone (`Clutter.Clone`)
-- Fallback: app icon + app title
-
-
-## Why popup was not appearing
-
-Using `get_texture()` as clone source can fail in Shell actors.
-This version clones the compositor actor directly (`source: compositorActor`) and scales it to thumbnail size.
+4. **Hide popup for short swipes**
+   - Popup is no longer shown on gesture begin.
+   - Popup appears only after motion passes `popupRevealDistance`.
