@@ -21,3 +21,6 @@ gnome-extensions enable "$UUID"
 
 On X11: press `Alt+F2`, run `r` to reload shell.
 On Wayland: log out and back in.
+
+
+Tested target shell range in metadata: GNOME Shell 45-49.

@@ -2,7 +2,7 @@
   "uuid": "gnome-trackpad-gestures@example.com",
   "name": "Trackpad Gesture Window Switcher",
   "description": "Long horizontal swipe switches across multiple windows with live previews.",
-  "shell-version": ["45", "46", "47", "48"],
-  "version": 1,
+  "shell-version": ["45", "46", "47", "48", "49"],
+  "version": 2,
   "url": "https://github.com/amarullz/windowgestures"
 }
