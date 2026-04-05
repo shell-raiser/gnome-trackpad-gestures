@@ -1,13 +1,11 @@
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
+import Shell from 'gi://Shell';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 /**
- * Popup with window icons + previews.
- * Thumbnail strategy:
- * - First preference: compositor texture clone when available.
- * - Fallback: app icon only.
+ * Popup with window previews.
  */
 export class PreviewSwitcherPopup {
     constructor() {
@@ -15,8 +13,8 @@ export class PreviewSwitcherPopup {
         this._items = [];
         this._selectedIndex = 0;
 
-        this._thumbWidth = 220;
-        this._thumbHeight = 140;
+        this._thumbWidth = 260;
+        this._thumbHeight = 160;
     }
 
     open(windows, selectedIndex) {
@@ -41,7 +39,7 @@ export class PreviewSwitcherPopup {
         this._container.opacity = 0;
         this._container.ease({
             opacity: 255,
-            duration: 100,
+            duration: 120,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
 
@@ -49,12 +47,9 @@ export class PreviewSwitcherPopup {
         this._applySelection();
     }
 
-    updateSelection(selectedIndex, progress) {
+    updateSelection(selectedIndex, _progress) {
         this._selectedIndex = selectedIndex;
         this._applySelection();
-
-        if (this._container)
-            this._container.set_pivot_point(progress, 0.5);
     }
 
     close() {
@@ -71,12 +66,15 @@ export class PreviewSwitcherPopup {
         const root = new St.BoxLayout({
             style_class: 'preview-switcher-item',
             vertical: true,
+            x_expand: true,
         });
 
         const thumbBin = new St.Bin({
             style_class: 'preview-switcher-thumb-bin',
             width: this._thumbWidth,
             height: this._thumbHeight,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
         });
 
         thumbBin.set_child(this._buildThumbnailActor(window));
@@ -84,7 +82,6 @@ export class PreviewSwitcherPopup {
         const title = new St.Label({
             style_class: 'preview-switcher-title',
             text: window.get_title() || 'Untitled',
-            y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
         });
 
@@ -107,11 +104,23 @@ export class PreviewSwitcherPopup {
             });
         }
 
-        const app = window.get_wm_class_instance?.();
-        return new St.Label({
+        const fallback = new St.BoxLayout({
             style_class: 'preview-switcher-fallback',
-            text: app || 'No preview',
+            vertical: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
         });
+
+        const app = Shell.WindowTracker.get_default().get_window_app(window);
+        const icon = app?.create_icon_texture?.(64);
+        if (icon)
+            fallback.add_child(icon);
+
+        fallback.add_child(new St.Label({
+            text: app?.get_name?.() || window.get_wm_class() || 'Preview unavailable',
+        }));
+
+        return fallback;
     }
 
     _layoutCentered() {
@@ -119,11 +128,11 @@ export class PreviewSwitcherPopup {
             return;
 
         const monitor = Main.layoutManager.currentMonitor;
-        const [width, height] = this._container.get_preferred_size();
+        const [, , natWidth, natHeight] = this._container.get_preferred_size();
 
         this._container.set_position(
-            Math.floor(monitor.x + (monitor.width - width) / 2),
-            Math.floor(monitor.y + (monitor.height - height) / 2)
+            Math.floor(monitor.x + (monitor.width - natWidth) / 2),
+            Math.floor(monitor.y + (monitor.height - natHeight) / 2)
         );
     }
 

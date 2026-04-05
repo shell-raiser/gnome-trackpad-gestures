@@ -21,18 +21,15 @@ export class GestureSwitcherController {
         this._selectedIndex = 0;
         this._accumulatedDx = 0;
 
-        // Pixels needed to move one MRU slot. Tuned for touchpad long-swipes.
-        this._pixelsPerStep = 140;
+        this._pixelsPerStep = 120;
+        this._wrapSelection = true;
     }
 
     enable() {
         if (this._stageCaptureId)
             return;
 
-        this._stageCaptureId = global.stage.connect(
-            'captured-event',
-            this._onCapturedEvent.bind(this)
-        );
+        this._stageCaptureId = global.stage.connect('captured-event', this._onCapturedEvent.bind(this));
     }
 
     disable() {
@@ -48,23 +45,19 @@ export class GestureSwitcherController {
         if (!this._isThreeFingerTouchpadEvent(event))
             return Clutter.EVENT_PROPAGATE;
 
-        const type = event.type();
+        const phase = event.get_gesture_phase();
 
-        if (type === Clutter.EventType.TOUCHPAD_SWIPE) {
-            const phase = event.get_gesture_phase();
+        if (phase === Clutter.TouchpadGesturePhase.BEGIN)
+            return this._beginSession();
 
-            if (phase === Clutter.TouchpadGesturePhase.BEGIN)
-                return this._beginSession();
+        if (phase === Clutter.TouchpadGesturePhase.UPDATE)
+            return this._updateSession(event);
 
-            if (phase === Clutter.TouchpadGesturePhase.UPDATE)
-                return this._updateSession(event);
+        if (phase === Clutter.TouchpadGesturePhase.END)
+            return this._finishSession();
 
-            if (phase === Clutter.TouchpadGesturePhase.END)
-                return this._finishSession();
-
-            if (phase === Clutter.TouchpadGesturePhase.CANCEL)
-                return this._cancelSession();
-        }
+        if (phase === Clutter.TouchpadGesturePhase.CANCEL)
+            return this._cancelSession();
 
         return Clutter.EVENT_PROPAGATE;
     }
@@ -81,6 +74,9 @@ export class GestureSwitcherController {
 
         if (this._windows.length < 2)
             return Clutter.EVENT_PROPAGATE;
+
+        const monitor = Main.layoutManager.currentMonitor;
+        this._pixelsPerStep = Math.max(40, Math.floor((monitor?.width ?? 1920) / 10));
 
         this._sessionActive = true;
         this._anchorIndex = 0;
@@ -100,15 +96,23 @@ export class GestureSwitcherController {
         const [dx] = event.get_gesture_motion_delta();
         this._accumulatedDx += dx;
 
-        const rawStepOffset = Math.trunc(-this._accumulatedDx / this._pixelsPerStep);
-        const unclampedIndex = this._anchorIndex + rawStepOffset;
-
-        const maxIndex = this._windows.length - 1;
-        this._selectedIndex = Math.max(0, Math.min(maxIndex, unclampedIndex));
+        const steps = Math.round(-this._accumulatedDx / this._pixelsPerStep);
+        this._selectedIndex = this._offsetIndex(this._anchorIndex, steps);
 
         this._popup.updateSelection(this._selectedIndex, this._normalizedProgress());
-
         return Clutter.EVENT_STOP;
+    }
+
+    _offsetIndex(start, offset) {
+        const length = this._windows.length;
+        if (!length)
+            return 0;
+
+        if (!this._wrapSelection)
+            return Math.max(0, Math.min(length - 1, start + offset));
+
+        const wrapped = ((start + offset) % length + length) % length;
+        return wrapped;
     }
 
     _finishSession() {
@@ -146,10 +150,8 @@ export class GestureSwitcherController {
         if (!this._windows.length)
             return 0;
 
-        const maxIndex = this._windows.length - 1;
-        const span = Math.max(1, maxIndex * this._pixelsPerStep);
-        const progress = Math.min(1, Math.max(0, -this._accumulatedDx / span));
-        return progress;
+        const span = Math.max(this._pixelsPerStep, (this._windows.length - 1) * this._pixelsPerStep);
+        return Math.min(1, Math.max(0, Math.abs(this._accumulatedDx) / span));
     }
 
     _ensurePopup() {
@@ -160,6 +162,6 @@ export class GestureSwitcherController {
     _getMruWindows() {
         return global.display
             .get_tab_list(Meta.TabList.NORMAL_ALL, null)
-            .filter(window => !window.skip_taskbar);
+            .filter(window => !window.skip_taskbar && !window.minimized);
     }
 }

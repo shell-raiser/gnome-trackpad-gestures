@@ -1,29 +1,18 @@
 # Implementation notes
 
-## 1) Multi-window jump in one swipe
+## Gesture handling fixes
 
-The key change from "one swipe == one step" behavior is:
+To address "only left swipe partially works" symptoms, this version does:
 
-- Keep an active gesture session from `BEGIN` to `END`.
-- Track **cumulative** delta (`accumulatedDx`) instead of per-update threshold reset.
-- Derive selected MRU index as:
+- Start a gesture session on `TOUCHPAD_SWIPE BEGIN` and open popup immediately.
+- Use cumulative horizontal motion for index selection.
+- Scale `pixelsPerStep` from monitor width so short and long swipes map predictably.
+- Support both swipe directions with wrapped indexing.
 
-```text
-selectedIndex = clamp(anchorIndex + trunc(-accumulatedDx / pixelsPerStep), 0, windowCount - 1)
-```
+## Popup rendering
 
-This enables 1 → 3 navigation with one long swipe when there are 3 windows.
-
-## 2) Preview rendering strategy
-
-Best practical approach in GNOME Shell extension code:
-
-1. Try `window.get_compositor_private().get_texture()` and create `Clutter.Clone`.
-2. If texture is unavailable (special windows / race conditions), use fallback label/icon.
-3. Keep thumbnails light and fixed size to avoid frame drops during gesture updates.
-
-## 3) Why this approach is robust
-
-- No activation happens mid-gesture; activation only at `END`.
-- User can scrub left/right between candidates while fingers stay on touchpad.
-- Popup gives visual confidence by showing actual window snapshots.
+- Popup is created at session begin and destroyed at session end/cancel.
+- Selection highlight updates every gesture update.
+- Thumbnail priority:
+  1) compositor texture clone (`Clutter.Clone`)
+  2) app icon + app title fallback
