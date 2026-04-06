@@ -147,6 +147,9 @@ export class GestureSwitcherController {
 
         const isVertical = absY > absX;
         if (isVertical && this._fourFingerDy > downThreshold && this._fourFingerSwipeDownShowDesktop) {
+            if (Main.overview.visible)
+                return Clutter.EVENT_PROPAGATE;
+
             this._showDesktopCurrentWorkspace();
             return Clutter.EVENT_STOP;
         }
@@ -230,6 +233,11 @@ export class GestureSwitcherController {
 
         const isVertical = Math.abs(this._accumulatedDy) > Math.abs(this._accumulatedDx);
         if (isVertical && this._accumulatedDy > 80) {
+            if (Main.overview.visible) {
+                this._endCommon();
+                return Clutter.EVENT_PROPAGATE;
+            }
+
             this._showDesktopCurrentWorkspace();
             this._endCommon();
             return Clutter.EVENT_STOP;
@@ -296,7 +304,7 @@ export class GestureSwitcherController {
     _getMruWindows() {
         let windows = global.display
             .get_tab_list(Meta.TabList.NORMAL_ALL, null)
-            .filter(window => !window.skip_taskbar && !window.minimized);
+            .filter(window => !window.skip_taskbar);
 
         const currentWorkspaceOnly = this._shouldUseCurrentWorkspaceOnly();
         if (currentWorkspaceOnly) {
