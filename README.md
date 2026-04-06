@@ -4,8 +4,10 @@ GNOME Shell extension prototype focused on touchpad window switching.
 
 ## Expected behavior
 
-- A **short swipe** switches to the next recent window directly (no popup).
-- A **long swipe** enters multi-window selection and shows the preview popup.
+- A **short 3-finger swipe** switches to the next recent window directly (no popup).
+- A **long 3-finger swipe** enters multi-window selection and shows the preview popup.
+- Short-vs-long is determined by **swipe duration**, not distance.
+- **4-finger swipes are left to GNOME default behavior** (native direction + animation).
 - Swiping direction maps directly to list movement (left swipe goes left, right swipe goes right).
 - Selection clamps at the list edges (no wrap-around).
 
@@ -26,9 +28,9 @@ On Wayland: log out and back in.
 
 Open **Extensions** app → this extension → **Preferences** to tune:
 - swipe sensitivity (`swipe-gain`, `pixels-per-step`)
-- long-swipe popup threshold (`popup-reveal-steps`)
-- short-swipe threshold (`short-swipe-distance`)
+- long-swipe duration threshold (`long-swipe-duration-ms`)
 - preview thumbnail size (`preview-width`, `preview-height`)
 - automatic down-scaling when many windows are open so the popup fits on screen
 
 Tested target shell range in metadata: GNOME Shell 45-49.
+

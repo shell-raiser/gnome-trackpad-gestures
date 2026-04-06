@@ -1,5 +1,6 @@
 import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
+import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {PreviewSwitcherPopup} from './previewPopup.js';
@@ -12,6 +13,7 @@ export class GestureSwitcherController {
 
         this._sessionActive = false;
         this._popupVisible = false;
+        this._gestureStartUsec = 0;
         this._windows = [];
         this._anchorIndex = 0;
         this._selectedIndex = 0;
@@ -19,8 +21,7 @@ export class GestureSwitcherController {
 
         this._pixelsPerStep = 140;
         this._swipeGain = 1;
-        this._popupRevealSteps = 2;
-        this._shortSwipeDistance = 30;
+        this._longSwipeDurationMs = 220;
         this._wrapSelection = false;
     }
 
@@ -46,12 +47,20 @@ export class GestureSwitcherController {
 
         this._swipeGain = this._settings.get_double('swipe-gain');
         this._pixelsPerStep = this._settings.get_int('pixels-per-step');
-        this._popupRevealSteps = this._settings.get_int('popup-reveal-steps');
-        this._shortSwipeDistance = this._settings.get_int('short-swipe-distance');
+        this._longSwipeDurationMs = this._settings.get_int('long-swipe-duration-ms');
     }
 
     _onCapturedEvent(_actor, event) {
-        if (!this._isThreeFingerTouchpadEvent(event))
+        if (event.type() !== Clutter.EventType.TOUCHPAD_SWIPE)
+            return Clutter.EVENT_PROPAGATE;
+
+        const fingers = event.get_touchpad_gesture_finger_count();
+
+        // Keep 4-finger behavior fully default GNOME (workspace swipe animation + direction).
+        if (fingers === 4)
+            return Clutter.EVENT_PROPAGATE;
+
+        if (fingers !== 3)
             return Clutter.EVENT_PROPAGATE;
 
         const phase = event.get_gesture_phase();
@@ -71,13 +80,6 @@ export class GestureSwitcherController {
         return Clutter.EVENT_PROPAGATE;
     }
 
-    _isThreeFingerTouchpadEvent(event) {
-        if (event.type() !== Clutter.EventType.TOUCHPAD_SWIPE)
-            return false;
-
-        return event.get_touchpad_gesture_finger_count() === 3;
-    }
-
     _beginSession() {
         this._windows = this._getMruWindows();
 
@@ -88,6 +90,7 @@ export class GestureSwitcherController {
 
         this._sessionActive = true;
         this._popupVisible = false;
+        this._gestureStartUsec = GLib.get_monotonic_time();
         this._anchorIndex = 0;
         this._selectedIndex = 0;
         this._accumulatedDx = 0;
@@ -104,10 +107,20 @@ export class GestureSwitcherController {
         const [dx] = event.get_gesture_motion_delta();
         this._accumulatedDx += dx * this._swipeGain;
 
-        const steps = Math.trunc(this._accumulatedDx / this._pixelsPerStep);
-        this._selectedIndex = this._offsetIndex(this._anchorIndex, steps);
+        const rawSteps = Math.trunc(this._accumulatedDx / this._pixelsPerStep);
+        const minSteps = -this._anchorIndex;
+        const maxSteps = (this._windows.length - 1) - this._anchorIndex;
+        const clampedSteps = Math.max(minSteps, Math.min(maxSteps, rawSteps));
 
-        if (!this._popupVisible && Math.abs(steps) >= this._popupRevealSteps) {
+        if (clampedSteps !== rawSteps)
+            this._accumulatedDx = clampedSteps * this._pixelsPerStep;
+
+        this._selectedIndex = this._offsetIndex(this._anchorIndex, clampedSteps);
+
+        const elapsedMs = this._elapsedGestureMs();
+        const longSwipeReached = elapsedMs >= this._longSwipeDurationMs;
+
+        if (!this._popupVisible && longSwipeReached && Math.abs(clampedSteps) >= 1) {
             this._popup.open(this._windows, this._selectedIndex);
             this._popupVisible = true;
         }
@@ -133,10 +146,11 @@ export class GestureSwitcherController {
         if (!this._sessionActive)
             return Clutter.EVENT_PROPAGATE;
 
-        if (!this._popupVisible) {
-            const direction = Math.sign(this._accumulatedDx);
-            if (Math.abs(this._accumulatedDx) >= this._shortSwipeDistance)
-                this._selectedIndex = this._offsetIndex(0, direction === 0 ? 0 : direction);
+        const isLongSwipe = this._elapsedGestureMs() >= this._longSwipeDurationMs;
+
+        if (!isLongSwipe) {
+            if (Math.abs(this._accumulatedDx) > 0)
+                this._selectedIndex = this._offsetIndex(0, 1);
         }
 
         const targetWindow = this._windows[this._selectedIndex];
@@ -145,6 +159,13 @@ export class GestureSwitcherController {
 
         this._endCommon();
         return Clutter.EVENT_STOP;
+    }
+
+    _elapsedGestureMs() {
+        if (!this._gestureStartUsec)
+            return 0;
+
+        return Math.floor((GLib.get_monotonic_time() - this._gestureStartUsec) / 1000);
     }
 
     _cancelSession() {
@@ -158,6 +179,7 @@ export class GestureSwitcherController {
     _endCommon() {
         this._sessionActive = false;
         this._popupVisible = false;
+        this._gestureStartUsec = 0;
         this._windows = [];
         this._anchorIndex = 0;
         this._selectedIndex = 0;

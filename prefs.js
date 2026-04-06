@@ -32,8 +32,7 @@ export default class TrackpadGesturesPrefs extends ExtensionPreferences {
 
         group.add(this._spinRow('Swipe gain', settings, 'swipe-gain', 0.2, 4.0, 0.1, 1));
         group.add(this._spinRow('Pixels per step', settings, 'pixels-per-step', 40, 600, 10, 0));
-        group.add(this._spinRow('Popup reveal steps', settings, 'popup-reveal-steps', 2, 8, 1, 0));
-        group.add(this._spinRow('Short swipe distance', settings, 'short-swipe-distance', 10, 200, 5, 0));
+        group.add(this._spinRow('Long swipe duration (ms)', settings, 'long-swipe-duration-ms', 80, 800, 10, 0));
         group.add(this._spinRow('Preview width', settings, 'preview-width', 120, 600, 10, 0));
         group.add(this._spinRow('Preview height', settings, 'preview-height', 90, 480, 10, 0));
 

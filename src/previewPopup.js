@@ -1,6 +1,7 @@
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import Shell from 'gi://Shell';
+import Pango from 'gi://Pango';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -95,7 +96,8 @@ export class PreviewSwitcherPopup {
         const root = new St.BoxLayout({
             style_class: 'preview-switcher-item',
             vertical: true,
-            x_expand: true,
+            width: this._renderThumbWidth,
+            x_expand: false,
         });
 
         const thumbBin = new St.Bin({
@@ -111,8 +113,11 @@ export class PreviewSwitcherPopup {
         const title = new St.Label({
             style_class: 'preview-switcher-title',
             text: window.get_title() || 'Untitled',
+            width: this._renderThumbWidth,
             x_align: Clutter.ActorAlign.CENTER,
         });
+        title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        title.clutter_text.single_line_mode = true;
 
         root.add_child(thumbBin);
         root.add_child(title);
@@ -159,8 +164,13 @@ export class PreviewSwitcherPopup {
             return;
 
         const monitor = Main.layoutManager.currentMonitor;
-        const popupWidth = (windowCount * this._renderThumbWidth) + ((windowCount - 1) * this._itemSpacing) + this._horizontalPadding;
-        const popupHeight = this._renderThumbHeight + 90;
+        const [, , natWidth, natHeight] = this._container.get_preferred_size();
+
+        const estimatedWidth = (windowCount * this._renderThumbWidth) + ((windowCount - 1) * this._itemSpacing) + this._horizontalPadding;
+        const estimatedHeight = this._renderThumbHeight + 90;
+
+        const popupWidth = natWidth > 0 ? natWidth : estimatedWidth;
+        const popupHeight = natHeight > 0 ? natHeight : estimatedHeight;
 
         this._container.set_position(
             Math.floor(monitor.x + (monitor.width - popupWidth) / 2),

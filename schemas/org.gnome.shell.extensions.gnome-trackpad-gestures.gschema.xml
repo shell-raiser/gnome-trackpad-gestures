@@ -9,13 +9,9 @@
       <default>140</default>
       <summary>Gesture distance per window step</summary>
     </key>
-    <key name="popup-reveal-steps" type="i">
-      <default>2</default>
-      <summary>Step threshold before showing popup</summary>
-    </key>
-    <key name="short-swipe-distance" type="i">
-      <default>30</default>
-      <summary>Distance required for short-swipe switch</summary>
+    <key name="long-swipe-duration-ms" type="i">
+      <default>220</default>
+      <summary>Duration threshold between short and long swipe</summary>
     </key>
     <key name="preview-width" type="i">
       <default>260</default>

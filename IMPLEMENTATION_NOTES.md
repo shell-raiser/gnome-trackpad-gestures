@@ -2,38 +2,26 @@
 
 ## Requested behavior adjustments
 
-1. **Preview size inside thumbnail boxes**
+1. **Edge clamping without dead-distance debt**
+   - When the gesture hits the first/last window, extra outward movement is discarded.
+   - Internally, accumulated delta is snapped back to the clamped edge step so returning inward starts immediately.
+
+2. **4-finger swipe behavior**
+   - 4-finger swipes are not intercepted by this extension.
+   - GNOME handles desktop swipe direction and animation with default behavior.
+
+3. **Popup center alignment with auto-resize**
+   - Popup uses actor preferred size (`get_preferred_size`) for centering.
+   - Falls back to estimated size only when preferred size is unavailable.
+
+4. **Preview size and title truncation**
    - Preview clone uses explicit thumbnail width/height.
-   - Preview dimensions are now user-configurable in extension preferences.
+   - Window title is single-line, width-bound, and ellipsized to avoid expanding item width.
+   - Render size auto-scales down for many windows so the popup remains on-screen.
 
-2. **Lower swipe sensitivity**
-   - Sensitivity now configurable from preferences via:
-     - `swipe-gain`
-     - `pixels-per-step`
+5. **Settings integration**
+   - GSettings schema and `prefs.js` expose sensitivity and preview controls.
+   - Runtime loads settings safely and falls back to defaults if schema is unavailable.
 
-3. **Disable end-to-end looping**
-   - Wrapped index behavior is disabled by default.
-   - Selection is clamped at start/end of the MRU list.
-
-4. **Short swipe without popup**
-   - Popup is shown only when swipe reaches long-swipe threshold (`popup-reveal-steps`).
-   - If threshold is not reached, release performs one-step MRU switch with no popup.
-
-5. **Swipe direction mapping**
-   - Step mapping uses the direct sign of gesture delta so swipe direction is no longer inverted.
-
-## Settings integration
-
-- Added GSettings schema: `org.gnome.shell.extensions.gnome-trackpad-gestures`.
-- Added `prefs.js` UI so users can control sensitivity and preview size in Extensions app.
-
-
-6. **Large window list fitting**
-   - Popup render thumbnail size is automatically scaled down when many windows are open.
-   - Width is capped to a monitor-usage budget so the popup stays on-screen.
-
-
-## Schema robustness
-
-- Bundles `schemas/gschemas.compiled` with the extension to reduce missing-schema issues.
-- Adds runtime fallback in `extension.js` and `prefs.js` so the extension does not crash if the schema cannot be loaded.
+6. **Short vs long swipe detection**
+   - Classification is based on gesture duration (`long-swipe-duration-ms`), not travel distance.
