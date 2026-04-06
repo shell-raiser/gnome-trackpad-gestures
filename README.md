@@ -1,5 +1,12 @@
 # gnome-trackpad-gestures
+I've vibe coded this extension since the next best touchpad gestures extension (https://github.com/amarullz/windowgestures) was not enough for me.
+I am using this extension and will keep fixing bugs whenever I discover one. You can try it if you want to (maybe I'll setup a Action to give a packed zip?)
 
+I want the touchpad gestures to work as similar as the gestures in Windows, that's the goal.
+
+I have'nt  tried to look at any of this code right now, may be I'll review it after a certain stage.
+
+-----
 GNOME Shell extension prototype focused on touchpad window switching.
 
 ## Expected behavior
