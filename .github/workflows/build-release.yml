@@ -1,0 +1,44 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev
+      
+      - name: Compile GSettings schemas
+        run: glib-compile-schemas schemas/
+      
+      - name: Create extension zip
+        run: |
+          ZIP_NAME="gnome-trackpad-gestures.zip"
+          mkdir -p build
+          cp -r extension.js prefs.js metadata.json stylesheet.css src schemas build/
+          cd build
+          zip -r "../${ZIP_NAME}" .
+          cd ..
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+      
+      - name: Get version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: gnome-trackpad-gestures.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
