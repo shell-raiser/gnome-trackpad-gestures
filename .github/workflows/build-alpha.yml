@@ -1,0 +1,75 @@
+name: Build Alpha Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags-ignore:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev
+      
+      - name: Compile GSettings schemas
+        run: glib-compile-schemas schemas/
+      
+      - name: Create extension zip
+        run: |
+          ZIP_NAME="gnome-trackpad-gestures-alpha.zip"
+          mkdir -p build
+          cp -r extension.js prefs.js metadata.json stylesheet.css src schemas build/
+          cd build
+          zip -r "../${ZIP_NAME}" .
+          cd ..
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+      
+      - name: Create alpha version identifier
+        run: |
+          COMMIT_SHORT=$(git rev-parse --short HEAD)
+          COMMIT_DATE=$(git log -1 --format=%cI)
+          VERSION="alpha-${COMMIT_SHORT}-$(date +%Y%m%d)"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "COMMIT_SHORT=${COMMIT_SHORT}" >> $GITHUB_ENV
+      
+      - name: Delete previous alpha releases
+        run: |
+          # Get list of alpha releases sorted by date (newest first)
+          RELEASES=$(gh release list --limit 100 | grep "alpha" | awk '{print $1}')
+          
+          # Keep only the first one (latest), delete the rest
+          COUNT=0
+          while IFS= read -r RELEASE; do
+            if [ $COUNT -gt 0 ]; then
+              echo "Deleting old alpha release: $RELEASE"
+              gh release delete "$RELEASE" --yes
+            fi
+            COUNT=$((COUNT + 1))
+          done <<< "$RELEASES"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create Alpha Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: gnome-trackpad-gestures-alpha.zip
+          draft: false
+          prerelease: true
+          generate_release_notes: false
+          body: |
+            **Bleeding Edge Alpha Build**
+            
+            Commit: ${{ env.COMMIT_SHORT }}
+            This is an automatic alpha release built from the latest commit.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
