@@ -14,64 +14,36 @@ GNOME Shell extension prototype focused on touchpad window switching.
 - A **short 3-finger swipe** switches to the next recent window directly (no popup).
 - A **long 3-finger swipe** enters multi-window selection and shows the preview popup.
 - Short-vs-long is determined by **swipe duration**, not distance.
-- **4-finger swipes are left to GNOME default behavior** (native direction + animation).
-- Swiping direction maps directly to list movement (left swipe goes left, right swipe goes right).
-- Selection clamps at the list edges (no wrap-around).
+- If only one window is available, short swipe stays on the same window; long swipe still shows a one-window popup.
+- 3-finger swipe down shows desktop.
+- 4-finger swipes preserve GNOME default behavior (workspace/overview) unless optional down/tap add-ons are enabled.
+- Window list scope follows GNOME Alt+Tab current-workspace setting (or extension fallback setting).
 
-## Installation
+## Optional 4-finger add-ons
 
-### Option 1: From GitHub Releases (Easiest)
+- 4-finger tap opens notification list.
+- 4-finger swipe down shows desktop.
 
-1. Download the latest `gnome-trackpad-gestures.zip` from [GitHub Releases](https://github.com/amarullz/windowgestures/releases)
-2. Extract it to your extensions directory:
-   ```bash
-   UUID="gnome-trackpad-gestures@example.com"
-   DEST="$HOME/.local/share/gnome-shell/extensions/$UUID"
-   mkdir -p "$DEST"
-   unzip gnome-trackpad-gestures.zip -d "$DEST"
-   glib-compile-schemas "$DEST/schemas"
-   ```
-3. Enable the extension:
-   ```bash
-   gnome-extensions enable "$UUID"
-   ```
-4. Reload the shell:
-   - On X11: press `Alt+F2`, run `r` to reload shell
-   - On Wayland: log out and back in
-
-### Option 2: Manual Installation from Source
-
-1. Clone or download the repository
-2. Install the extension:
-   ```bash
-   UUID="gnome-trackpad-gestures@example.com"
-   DEST="$HOME/.local/share/gnome-shell/extensions/$UUID"
-   mkdir -p "$DEST"
-   cp -r extension.js prefs.js metadata.json stylesheet.css src schemas "$DEST"/
-   glib-compile-schemas "$DEST/schemas"
-   gnome-extensions enable "$UUID"
-   ```
-3. Reload the shell:
-   - On X11: press `Alt+F2`, run `r` to reload shell
-   - On Wayland: log out and back in
-
-### Uninstall
+## Install locally
 
 ```bash
 UUID="gnome-trackpad-gestures@example.com"
-gnome-extensions disable "$UUID"
-gnome-extensions uninstall "$UUID"
-# Or manually remove:
-# rm -rf ~/.local/share/gnome-shell/extensions/$UUID
+DEST="$HOME/.local/share/gnome-shell/extensions/$UUID"
+cp -r extension.js prefs.js metadata.json stylesheet.css src schemas "$DEST"/
+glib-compile-schemas "$DEST/schemas"   # safe to run even though gschemas.compiled is bundled
+gnome-extensions enable "$UUID"
 ```
+
+On X11: press `Alt+F2`, run `r` to reload shell.
+On Wayland: log out and back in.
 
 ## Settings
 
 Open **Extensions** app → this extension → **Preferences** to tune:
 - swipe sensitivity (`swipe-gain`, `pixels-per-step`)
 - long-swipe duration threshold (`long-swipe-duration-ms`)
-- preview thumbnail size (`preview-width`, `preview-height`)
-- automatic down-scaling when many windows are open so the popup fits on screen
+- preview size (`preview-scale`) preserving original window aspect ratio
+- follow GNOME Alt+Tab scope or use fallback current-workspace-only filter
+- optional 4-finger tap/down add-ons
 
 Tested target shell range in metadata: GNOME Shell 45-49.
-

@@ -13,13 +13,25 @@
       <default>220</default>
       <summary>Duration threshold between short and long swipe</summary>
     </key>
-    <key name="preview-width" type="i">
-      <default>260</default>
-      <summary>Preview thumbnail width</summary>
+    <key name="preview-scale" type="i">
+      <default>100</default>
+      <summary>Preview size percentage</summary>
     </key>
-    <key name="preview-height" type="i">
-      <default>160</default>
-      <summary>Preview thumbnail height</summary>
+    <key name="four-finger-tap-notifications" type="b">
+      <default>true</default>
+      <summary>4-finger tap opens notification list</summary>
+    </key>
+    <key name="four-finger-swipe-down-show-desktop" type="b">
+      <default>true</default>
+      <summary>4-finger swipe down shows desktop</summary>
+    </key>
+    <key name="respect-gnome-window-switcher" type="b">
+      <default>true</default>
+      <summary>Follow GNOME window switcher current-workspace-only setting</summary>
+    </key>
+    <key name="fallback-current-workspace-only" type="b">
+      <default>true</default>
+      <summary>Fallback filter to current workspace when GNOME setting is unavailable</summary>
     </key>
   </schema>
 </schemalist>

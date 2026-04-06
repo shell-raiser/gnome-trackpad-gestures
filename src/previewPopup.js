@@ -12,21 +12,19 @@ export class PreviewSwitcherPopup {
         this._items = [];
         this._selectedIndex = 0;
 
-        this._thumbWidth = 260;
-        this._thumbHeight = 160;
-        this._renderThumbWidth = 260;
-        this._renderThumbHeight = 160;
+        this._baseThumbHeight = 160;
+        this._previewScale = 100;
         this._itemSpacing = 18;
         this._horizontalPadding = 80;
         this._maxMonitorUsage = 0.92;
+        this._itemSizes = [];
     }
 
     configureFromSettings() {
         if (!this._settings)
             return;
 
-        this._thumbWidth = this._settings.get_int('preview-width');
-        this._thumbHeight = this._settings.get_int('preview-height');
+        this._previewScale = this._settings.get_int('preview-scale');
     }
 
     open(windows, selectedIndex) {
@@ -42,16 +40,16 @@ export class PreviewSwitcherPopup {
             visible: true,
         });
 
-        this._computeRenderSize(windows.length);
+        this._computeItemSizes(windows);
 
-        windows.forEach(window => {
-            const item = this._buildWindowItem(window);
+        windows.forEach((window, index) => {
+            const item = this._buildWindowItem(window, index);
             this._items.push(item);
             this._container.add_child(item.root);
         });
 
-        Main.layoutManager.addTopChrome(this._container);
-        this._layoutCentered(windows.length);
+        Main.layoutManager.addTopChrome(this._container, {trackFullscreen: false});
+        this._layoutCentered();
 
         this._container.opacity = 0;
         this._container.ease({
@@ -76,44 +74,61 @@ export class PreviewSwitcherPopup {
         this._container.destroy();
         this._container = null;
         this._items = [];
+        this._itemSizes = [];
         this._selectedIndex = 0;
     }
 
-    _computeRenderSize(windowCount) {
+    _computeItemSizes(windows) {
+        const height = Math.max(72, Math.floor(this._baseThumbHeight * (this._previewScale / 100)));
+        const rawSizes = windows.map(window => {
+            const actor = window.get_compositor_private?.();
+            const aw = actor?.width ?? 16;
+            const ah = actor?.height ?? 10;
+            const aspect = ah > 0 ? aw / ah : 1.6;
+            return {
+                width: Math.max(100, Math.floor(height * aspect)),
+                height,
+            };
+        });
+
         const monitor = Main.layoutManager.currentMonitor;
         const maxWidth = Math.floor((monitor?.width ?? 1920) * this._maxMonitorUsage);
-        const totalSpacing = (windowCount - 1) * this._itemSpacing + this._horizontalPadding;
-        const availableForThumbs = Math.max(120, maxWidth - totalSpacing);
-        const maxPerItem = Math.floor(availableForThumbs / Math.max(1, windowCount));
+        const spacing = (rawSizes.length - 1) * this._itemSpacing + this._horizontalPadding;
+        const contentWidth = rawSizes.reduce((sum, size) => sum + size.width, 0);
+        const totalWidth = contentWidth + spacing;
 
-        const scale = Math.min(1, maxPerItem / this._thumbWidth);
+        const fitScale = totalWidth > maxWidth ? maxWidth / totalWidth : 1;
 
-        this._renderThumbWidth = Math.max(100, Math.floor(this._thumbWidth * scale));
-        this._renderThumbHeight = Math.max(72, Math.floor(this._thumbHeight * scale));
+        this._itemSizes = rawSizes.map(size => ({
+            width: Math.max(100, Math.floor(size.width * fitScale)),
+            height: Math.max(72, Math.floor(size.height * fitScale)),
+        }));
     }
 
-    _buildWindowItem(window) {
+    _buildWindowItem(window, index) {
+        const size = this._itemSizes[index];
+
         const root = new St.BoxLayout({
             style_class: 'preview-switcher-item',
             vertical: true,
-            width: this._renderThumbWidth,
+            width: size.width,
             x_expand: false,
         });
 
         const thumbBin = new St.Bin({
             style_class: 'preview-switcher-thumb-bin',
-            width: this._renderThumbWidth,
-            height: this._renderThumbHeight,
+            width: size.width,
+            height: size.height,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });
 
-        thumbBin.set_child(this._buildThumbnailActor(window));
+        thumbBin.set_child(this._buildThumbnailActor(window, size));
 
         const title = new St.Label({
             style_class: 'preview-switcher-title',
             text: window.get_title() || 'Untitled',
-            width: this._renderThumbWidth,
+            width: size.width,
             x_align: Clutter.ActorAlign.CENTER,
         });
         title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -125,15 +140,15 @@ export class PreviewSwitcherPopup {
         return {root, window};
     }
 
-    _buildThumbnailActor(window) {
+    _buildThumbnailActor(window, size) {
         const compositorActor = window.get_compositor_private?.();
 
         if (compositorActor && compositorActor.width > 0 && compositorActor.height > 0) {
             return new Clutter.Clone({
                 source: compositorActor,
                 reactive: false,
-                width: this._renderThumbWidth,
-                height: this._renderThumbHeight,
+                width: size.width,
+                height: size.height,
                 x_align: Clutter.ActorAlign.FILL,
                 y_align: Clutter.ActorAlign.FILL,
             });
@@ -147,7 +162,7 @@ export class PreviewSwitcherPopup {
         });
 
         const app = Shell.WindowTracker.get_default().get_window_app(window);
-        const iconSize = Math.max(24, Math.floor(this._renderThumbHeight * 0.35));
+        const iconSize = Math.max(24, Math.floor(size.height * 0.35));
         const icon = app?.create_icon_texture?.(iconSize);
         if (icon)
             fallback.add_child(icon);
@@ -159,22 +174,16 @@ export class PreviewSwitcherPopup {
         return fallback;
     }
 
-    _layoutCentered(windowCount) {
+    _layoutCentered() {
         if (!this._container)
             return;
 
         const monitor = Main.layoutManager.currentMonitor;
         const [, , natWidth, natHeight] = this._container.get_preferred_size();
 
-        const estimatedWidth = (windowCount * this._renderThumbWidth) + ((windowCount - 1) * this._itemSpacing) + this._horizontalPadding;
-        const estimatedHeight = this._renderThumbHeight + 90;
-
-        const popupWidth = natWidth > 0 ? natWidth : estimatedWidth;
-        const popupHeight = natHeight > 0 ? natHeight : estimatedHeight;
-
         this._container.set_position(
-            Math.floor(monitor.x + (monitor.width - popupWidth) / 2),
-            Math.floor(monitor.y + (monitor.height - popupHeight) / 2)
+            Math.floor(monitor.x + (monitor.width - natWidth) / 2),
+            Math.floor(monitor.y + (monitor.height - natHeight) / 2)
         );
     }
 

@@ -2,26 +2,29 @@
 
 ## Requested behavior adjustments
 
-1. **Edge clamping without dead-distance debt**
-   - When the gesture hits the first/last window, extra outward movement is discarded.
-   - Internally, accumulated delta is snapped back to the clamped edge step so returning inward starts immediately.
+1. **Single-window 3-finger behavior**
+   - The extension captures 3-finger gestures even with one window in scope.
+   - Short swipe does nothing (stays on current window).
+   - Long swipe opens popup with one window.
 
-2. **4-finger swipe behavior**
-   - 4-finger swipes are not intercepted by this extension.
-   - GNOME handles desktop swipe direction and animation with default behavior.
+2. **Popup visibility over fullscreen**
+   - Popup is added via top chrome with `trackFullscreen: false` so it remains visible above fullscreen apps.
 
-3. **Popup center alignment with auto-resize**
-   - Popup uses actor preferred size (`get_preferred_size`) for centering.
-   - Falls back to estimated size only when preferred size is unavailable.
+3. **Preview size control preserves aspect ratio**
+   - Replaced width/height knobs with one `preview-scale` percentage.
+   - Per-window thumbnail width is derived from that window's aspect ratio.
 
-4. **Preview size and title truncation**
-   - Preview clone uses explicit thumbnail width/height.
-   - Window title is single-line, width-bound, and ellipsized to avoid expanding item width.
-   - Render size auto-scales down for many windows so the popup remains on-screen.
+4. **4-finger behavior**
+   - Normal 4-finger swipe behavior is left to GNOME defaults.
+   - Optional add-ons: 4-finger tap opens notification list and 4-finger swipe down shows desktop.
 
-5. **Settings integration**
-   - GSettings schema and `prefs.js` expose sensitivity and preview controls.
-   - Runtime loads settings safely and falls back to defaults if schema is unavailable.
+5. **3-finger swipe down behavior**
+   - Vertical 3-finger swipe down shows desktop.
 
-6. **Short vs long swipe detection**
-   - Classification is based on gesture duration (`long-swipe-duration-ms`), not travel distance.
+6. **Window scope parity with GNOME switcher**
+   - Attempts to read `org.gnome.shell.window-switcher::current-workspace-only`.
+   - Uses extension fallback if GNOME setting is unavailable.
+
+7. **Edge clamping and duration mode**
+   - Outward movement at ends is discarded to avoid dead-distance debt.
+   - Short vs long swipe classification remains duration-based.
